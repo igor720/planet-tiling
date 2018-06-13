@@ -1,4 +1,4 @@
-# planet_tiling
+# planet-tiling
 Polygons tiling of planet sphere with PostGIS
 
 ##Data preparation
