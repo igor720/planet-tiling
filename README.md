@@ -80,7 +80,7 @@ SELECT * FROM map.makeOceanSectors(
 ```
 
 Following will generate land tiles within specified land (aid=5) with average
-voronoi poligons size of 5000 km^2, with average sector size of 40000 km^2,
+voronoi poligon size of 5000 km^2, with average sector size of 40000 km^2,
 with maximum area of 0.125*40000 km^2 which can be cutted by rivers,
 with minimum area of 0.25*40000 km^2 intended for sector-independent islands,
 using only rivers with minimum streamflow of 2 for sectors cutting.
