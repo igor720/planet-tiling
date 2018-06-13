@@ -1,7 +1,7 @@
 # planet-tiling
 Polygons tiling of planet sphere with PostGIS
 
-##Data preparation
+## Data preparation
 
 The following commands suggest default PostgreSQL+PostGIS
 installation. 'riversz' and 'lands' shapefiles should be fetched
@@ -19,6 +19,7 @@ We use 'planet' database name (any valid name is suitable):
 ```
 createdb --host=localhost --port=5432 --username=postgres \
     --echo --template=template0 "planet" "whole planet data"
+```
 
 'sectors.sql' must be evaluated first.
 
@@ -40,7 +41,7 @@ ALTER TABLE map.rivers ALTER COLUMN fid TYPE BigInt;
 ALTER TABLE map.rivers ALTER COLUMN lmid TYPE BigInt;
 ```
 
-##Synopsis
+## Synopsis
 
 Generate ocean sectors
 ```sql
@@ -65,7 +66,7 @@ map.makeLandSectors(
     ) RETURNS Void
 ```
 
-##Examples
+## Examples
 
 Following will generate ocean tiles in the defined polygon with average
 size of 1000000 km^2, merge small sectors if thier size less then half
