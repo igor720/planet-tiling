@@ -1,10 +1,11 @@
--- Description:  SQL instructions for creating ocean and land sectors
+-- Description:  SQL instructions for creating ocean and
+--               land sectors (tiles, tesselation)
+--               on spherical planet survice
 -- license: MIT
 -- license-file: LICENSE
 --
--- Checked on the configuration:
---   PostgreSQL 10.4 (Ubuntu 10.4-2.pgdg16.04+1) on x86_64-pc-linux-gnu,
---     compiled by gcc (Ubuntu 5.4.0-6ubuntu1~16.04.9) 5.4.0 20160609, 64-bit
+-- verified on the configuration:
+--   PostgreSQL 10.4
 --   POSTGIS="2.4.4 r16526" PGSQL="100" GEOS="3.5.1-CAPI-1.9.1 r4246"
 --     PROJ="Rel. 4.9.2, 08 September 2015" GDAL="GDAL 1.11.3,
 --     released 2015/09/16" LIBXML="2.9.3" LIBJSON="0.11.99"
@@ -13,8 +14,8 @@
 -- Instructions:
 --
 -- The following commands suggest default PostgreSQL+PostGIS
--- installation; 'riversz' and 'lands' shapefiles should be fetched
--- from ForgedMaps.com or they must contain data with similar structure
+-- installation. 'riversz' and 'lands' shapefiles should be fetched
+-- from forgedmaps.com or they must contain data with similar structure
 --
 -- Prepare import sql files (we use 'map' schema for planet map data):
 -- shp2pgsql -s 3785 -d -D -I -t 2D -N skip riversz.shp map.rivers > rivers.sql
@@ -38,6 +39,14 @@
 -- ALTER TABLE map.rivers ALTER COLUMN fid TYPE BigInt;
 -- ALTER TABLE map.rivers ALTER COLUMN lmid TYPE BigInt;
 --
+-- PostgreSQL configuration:
+--
+-- If you intend to use large geometry data like planet data
+-- from forgemaps.com, then you need to make changes
+-- to PostgreSQL database configuration.
+-- Look into https://postgis.net/docs/performance_tips.html
+-- to understand what to do.
+-- 
 -- ************************************************************
 
 CREATE EXTENSION IF NOT EXISTS postgis;
@@ -469,13 +478,13 @@ END;
 $proc$ LANGUAGE plpgsql;
 
 -- Main function for creating ocean sectors. Args:
--- 'worldBB': world boundig box in any (not empty) projection
+-- 'world': world boundig polygon in any (not empty) projection
 -- 'avg_vp_areaKM': avarage voronoi polygon area in km^2
--- 'merging_ratio': ratio of 'avg_vp_areaKM', such that if the sector area
---     is smaller than it, it will be merged with another sector
+-- 'merging_ratio': share of 'avg_vp_areaKM', such that if the sector area
+--     is smaller than it, then it will be merged with another sector
 -- 'merging_method': method of sectors merging (sea 'mergeOceanSmallSectors'
 --     description)
--- 'is_whole_planet': shoud be 'true' if 'worldBB' covers a significant area
+-- 'is_whole_planet': shoud be 'true' if 'world' covers a significant area
 --     of the planet surfice (bug in ST_Area??). It affects the number
 --     of produced voronoi polygons
 DROP FUNCTION IF EXISTS map.makeOceanSectors;
@@ -1098,10 +1107,11 @@ $proc$ LANGUAGE plpgsql;
 -- 'aid': aid (areaId) of landmass
 -- 'avg_vp_areaKM': avarage voronoi polygon area in km^2
 -- 'avg_sector_areaKM': avarage sector area in km^2
--- 'max_sector_cut_area_ratio': ratio of 'avg_sector_areaKM', which defines
---     maximum area when cutting sectors by rivers (this is not a hard limit)
--- 'pref_min_island_area_ratio': ratio of 'avg_sector_areaKM', such that
+-- 'max_sector_cut_area_ratio': share of 'avg_sector_areaKM', which defines
+--     maximum area which can be cut by rivers (this is not a hard limit)
+-- 'pref_min_island_area_ratio': share of 'avg_sector_areaKM', such that
 --     if the island area is bigger than it, the island becomes separate sector
+--     automaticaly, regardless of the distance to other sectors
 -- 'min_streamflow': minimum river streamflow at which the river
 --     will make the sector cuts
 DROP FUNCTION IF EXISTS map.makeLandSectors;
