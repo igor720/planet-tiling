@@ -41,6 +41,15 @@ ALTER TABLE map.rivers ALTER COLUMN fid TYPE BigInt;
 ALTER TABLE map.rivers ALTER COLUMN lmid TYPE BigInt;
 ```
 
+## PostgreSQL configuration:
+
+If you intend to use large geometry data like planet data
+from https://forgemaps.com, then you need to make changes
+to PostgreSQL database configuration.
+
+Look into https://postgis.net/docs/performance_tips.html
+to understand what to do.
+
 ## Synopsis
 
 Generate ocean sectors
