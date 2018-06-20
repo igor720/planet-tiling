@@ -58,8 +58,7 @@ map.makeOceanSectors(
     world Geometry,
     avg_vp_areaKM Double Precision,
     merging_ratio Double Precision,
-    merging_method Int,
-    is_whole_planet Boolean
+    merging_method Int
     ) RETURNS Void
 ```
 
@@ -79,13 +78,12 @@ map.makeLandSectors(
 
 Following will generate ocean tiles in the defined polygon with average
 size of 1000000 km^2, merge small sectors if thier size less then half
-of average size, using 'second' merging method and taking into account
-only the specified world polygon for calculating the number of voronoi polygons.
+of average size, using 'second' merging method.
 
 ```sql
 SELECT * FROM map.makeOceanSectors(
      ST_GeomFromText('POLYGON((-75 -85, 75 -85, 75 85, -75 85, -75 -85))', 4326),
-     1000000, 0.5, 2, False );
+     1000000, 0.5, 2 );
 ```
 
 Following will generate land tiles within specified land (aid=5) with average

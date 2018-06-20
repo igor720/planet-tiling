@@ -188,7 +188,7 @@ BEGIN
         CONTINUE WHEN random()>=cosd(y)/maxCosY; -- discard excess points
         x := (xMax-xMin) * random() + xMin;
         count := count + 1;
-        RETURN NEXT ST_MakePoint(x, y);
+        RETURN NEXT ST_SetSRID(ST_MakePoint(x, y), 4326);
         IF count >= n_points THEN
             EXIT;
         END IF;
@@ -205,26 +205,35 @@ CREATE OR REPLACE FUNCTION map.genMultiPoint(
     RETURNS Geometry AS $proc$
 DECLARE
     area_unit Double Precision := 1000000;
+    planet4326 Geometry := ST_GeomFromText(
+        'POLYGON((-180 -89.9999, 180 -89.9999, 180 89.9999, -180 89.9999, -180 -89.9999))',
+        4326 );
     points Geometry;
     n_points Int;
 BEGIN
     IF is_whole_planet THEN
-        -- XXX: ST_Area doesn't work properly for very large areas
-        n_points := ceiling(510100000.0 * area_unit / avg_vp_area);
-    ELSE
-        n_points := ceiling(ST_Area(Geography(env4326), False) / avg_vp_area);
-    END IF;
-    RAISE DEBUG 'seeds points: %', n_points;
-
-    IF n_points>1 THEN
+        n_points := ceiling(510072000.0 * area_unit / avg_vp_area);
         SELECT INTO points (
-            SELECT ST_Collect(f.the_geom)
-            FROM (SELECT map.genPoints(env4326, n_points) AS the_geom) AS f
+            SELECT ST_Collect(p.the_geom)
+            FROM (SELECT map.genPoints(planet4326, n_points) AS the_geom) AS p
+            WHERE ST_ContainsProperly(env4326, p.the_geom)
         );
-        points := ST_Transform(ST_SetSRID(points, 4326), 3785);
-    ELSE 
+    ELSE
+        -- XXX: ST_Area doesn't work properly for very large areas
+        n_points := ceiling(ST_Area(Geography(env4326), False) / avg_vp_area);
+        SELECT INTO points (
+            SELECT ST_Collect(p.the_geom)
+            FROM (SELECT map.genPoints(env4326, n_points) AS the_geom) AS p
+        );
+    END IF;
+
+    IF (points IS NULL) OR (ST_NPoints(points)<=1) THEN
         -- if zero or one point then don't make result geometry
         points := NULL;
+        RAISE DEBUG 'seeds points: %', 0;
+    ELSE 
+        points := ST_Transform(points, 3785);
+        RAISE DEBUG 'seeds points: %', ST_NPoints(points);
     END IF;
 
     RETURN points;
@@ -484,14 +493,10 @@ $proc$ LANGUAGE plpgsql;
 --     is smaller than it, then it will be merged with another sector
 -- 'merging_method': method of sectors merging (sea 'mergeOceanSmallSectors'
 --     description)
--- 'is_whole_planet': shoud be 'true' if 'world' covers a significant area
---     of the planet surfice (bug in ST_Area??). It affects the number
---     of produced voronoi polygons
 DROP FUNCTION IF EXISTS map.makeOceanSectors;
 CREATE OR REPLACE FUNCTION map.makeOceanSectors(
     world Geometry, avg_vp_areaKM Double Precision,
-    merging_ratio Double Precision, merging_method Int,
-    is_whole_planet Boolean
+    merging_ratio Double Precision, merging_method Int
     ) RETURNS Void AS $proc$
 DECLARE
     area_unit Double Precision := 1000000;
@@ -510,7 +515,7 @@ BEGIN
 
     RAISE NOTICE '(o) making voronoi polygons..';
     PERFORM map.makeOceanVoronoiPolygons(
-        world3785, avg_vp_areaKM*area_unit, is_whole_planet, 3 );
+        world3785, avg_vp_areaKM*area_unit, True, 3 );
 
     SELECT count(*) INTO n_vps FROM _vps;
     RAISE NOTICE '(o) raw polygons: %', n_vps;
